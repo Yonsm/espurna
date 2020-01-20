@@ -15,6 +15,28 @@ AsyncClient * _tspk_client;
 #include <ESP8266WiFi.h>
 #endif
 
+#ifndef LEWEI_SUPPORT
+#define LEWEI_SUPPORT 0
+#endif
+
+#if LEWEI_SUPPORT
+#undef THINGSPEAK_URL
+#undef THINGSPEAK_HOST
+#undef THINGSPEAK_MIN_INTERVAL
+#define THINGSPEAK_URL "/api/V1/Gateway/UpdateSensors"
+#define THINGSPEAK_HOST "www.lewei50.com"
+#define THINGSPEAK_MIN_INTERVAL 300000
+
+const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
+    "POST %s/%02d HTTP/1.1\r\n"
+    "Host: %s\r\n"
+    //"User-Agent: ESPurna\r\n"
+    //"Connection: close\r\n"
+    "userkey: %s\r\n"
+    //"Content-Type: application/x-www-form-urlencoded\r\n"
+    "Content-Length: %d\r\n\r\n"
+    "%s\r\n";
+#else
 const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "POST %s HTTP/1.1\r\n"
     "Host: %s\r\n"
@@ -23,6 +45,7 @@ const char THINGSPEAK_REQUEST_TEMPLATE[] PROGMEM =
     "Content-Type: application/x-www-form-urlencoded\r\n"
     "Content-Length: %d\r\n\r\n"
     "%s\r\n";
+#endif
 
 bool _tspk_enabled = false;
 bool _tspk_clear = false;
@@ -118,8 +141,13 @@ void _tspkPost(String data) {
         char * b = (char *) response;
         b[len] = 0;
         char * p = strstr((char *)response, "\r\n\r\n");
+#if LEWEI_SUPPORT
+        unsigned int code = (p != NULL) && strstr(p, "\"\"Successful\":true") != NULL;
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %s\n"), p ? (p+4) : "NULL");
+#else
         unsigned int code = (p != NULL) ? atoi(&p[4]) : 0;
         DEBUG_MSG_P(PSTR("[THINGSPEAK] Response value: %d\n"), code);
+#endif
 
         _tspk_last_flush = millis();
         if ((0 == code) && (--_tspk_tries > 0)) {
@@ -146,6 +174,34 @@ void _tspkPost(String data) {
             }
         #endif
 
+
+#if LEWEI_SUPPORT
+        String tspkKey = getSetting("tspkKey");
+        unsigned int device_id;
+        const char *key = tspkKey.c_str();
+        //DEBUG_MSG_P(PSTR("[THINGSPEAK] key=%s\n"), key);
+        const char *userkey = strchr(key, '@');
+        if (userkey == NULL) {
+            userkey = key;
+            device_id = 1;
+        } else {
+            userkey++;
+            device_id = atoi(key);
+        }
+        DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s/%02d?%s\n"), THINGSPEAK_URL, device_id, data.c_str());
+
+        char buffer[128 + strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
+        snprintf_P(buffer, sizeof(buffer),
+            THINGSPEAK_REQUEST_TEMPLATE,
+            THINGSPEAK_URL,
+            device_id,
+            THINGSPEAK_HOST,
+            userkey,
+            data.length(),
+            data.c_str()
+        );
+        //DEBUG_MSG_P(PSTR("[THINGSPEAK] %s\n"), buffer);
+#else
         DEBUG_MSG_P(PSTR("[THINGSPEAK] POST %s?%s\n"), THINGSPEAK_URL, data.c_str());
 
         char buffer[strlen_P(THINGSPEAK_REQUEST_TEMPLATE) + strlen(THINGSPEAK_URL) + strlen(THINGSPEAK_HOST) + data.length()];
@@ -156,6 +212,7 @@ void _tspkPost(String data) {
             data.length(),
             data.c_str()
         );
+#endif
 
         client->write(buffer);
 
@@ -252,6 +309,16 @@ void _tspkFlush() {
     _tspk_flush = false;
 
     // Walk the fields
+#if LEWEI_SUPPORT
+    String data = String("[");
+    for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
+        if (_tspk_queue[id] != NULL) {
+            if (id > 0) data = data + String(",");
+            data = data + String("{'Name':'") + String(id+1) + String("','Value':'") + String(_tspk_queue[id]) + String("'}");
+        }
+    }
+    data = data + String("]");
+#else
     String data;
     for (unsigned char id=0; id<THINGSPEAK_FIELDS; id++) {
         if (_tspk_queue[id] != NULL) {
@@ -259,10 +326,13 @@ void _tspkFlush() {
             data = data + String("field") + String(id+1) + String("=") + String(_tspk_queue[id]);
         }
     }
+#endif
 
     // POST data if any
     if (data.length() > 0) {
+#if LEWEI_SUPPORT == 0
         data = data + String("&api_key=") + getSetting("tspkKey");
+#endif
         _tspk_tries = THINGSPEAK_TRIES;
         _tspkPost(data);
     }

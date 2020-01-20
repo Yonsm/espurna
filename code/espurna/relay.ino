@@ -43,14 +43,47 @@ std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 Ticker _relaySaveTicker;
 
+#if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+    unsigned char _jblSource = 5;
+#elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+    unsigned char _sharpCurrentMode = 1;
+    unsigned char _sharpTargetMode = 1;
+    #define RELAY_PROVIDER_SHARP_MODE_COUNT 6
+    #if NODEMCU_ID == 4
+        bool _sharp4LastStatus = false;
+        #undef RELAY_PROVIDER_SHARP_MODE_COUNT
+        #define RELAY_PROVIDER_SHARP_MODE_COUNT 3
+    #endif
+#endif
+
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
 // -----------------------------------------------------------------------------
 
+#ifndef RELAY_PROVIDER_SHARP_TRIGGER
+#define RELAY_PROVIDER_SHARP_TRIGGER HIGH
+#endif
 void _relayProviderStatus(unsigned char id, bool status) {
 
     // Check relay ID
     if (id >= _relays.size()) return;
+    #if NODEMCU_ID == 4 || NODEMCU_ID == 7
+        if (id && !_relays[0].current_status) {
+            _relays[id].target_status = _relays[id].current_status;
+            return;
+        }
+    #endif
+    // #if RELAY_PROVIDER == RELAY_PROVIDER_SHARP4
+    //     digitalWrite(_relays[id].pin, HIGH);
+    //     nice_delay(200);
+    //     digitalWrite(_relays[id].pin, LOW);
+    //     if (id == 2 && status) {
+    //         nice_delay(500);
+    //         digitalWrite(_relays[id].pin, HIGH);
+    //         nice_delay(200);
+    //         digitalWrite(_relays[id].pin, LOW);
+    //     }
+    // #endif
 
     // Store new current status
     _relays[id].current_status = status;
@@ -151,6 +184,87 @@ void _relayProviderStatus(unsigned char id, bool status) {
 
     #endif
 
+    #if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+        digitalWrite(_relays[id].pin, HIGH);
+        nice_delay(status ? 200 : 2000);
+        digitalWrite(_relays[id].pin, LOW);
+    #elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+        uint8_t pin;
+        #if NODEMCU_ID == 7
+            if (id == 0) {
+                if (status) {
+                    pin = RELAY1_PIN;
+                    // if (_relays[1].current_status == false) { // 非加湿模式，设置标记以便下一个 LOOP 能去除加湿模式
+                    //     _relays[1].current_status = true;
+                    //     _relays[1].target_status = false;
+                    // }
+                    _sharpCurrentMode = (_sharpTargetMode == 1);
+                }
+                else {
+                    pin = RELAY1_OFF_PIN;
+                }
+            }
+            else {
+                pin = RELAY2_PIN;
+            }
+        #elif NODEMCU_ID == 4
+            pin = (id == 0 && status && _sharp4LastStatus) ? GPIO_NONE : _relays[id].pin;
+            _sharp4LastStatus = status;
+        #else //if NODEMCU_ID == 5 || NODEMCU_ID == 6
+            if (id == 0) {
+                if (status) {
+                    #if NODEMCU_ID == 6
+                    if (_relays[1].target_status == false) {// 非加湿模式，首先按加湿模式，以便复位风量模式
+                        digitalWrite(RELAY2_PIN, RELAY_PROVIDER_SHARP_TRIGGER);
+                        nice_delay(200);
+                        digitalWrite(RELAY2_PIN, !RELAY_PROVIDER_SHARP_TRIGGER);
+                        nice_delay(500);
+                        _sharpCurrentMode = 1;
+                    }
+                    #endif
+                    pin = _relays[1].target_status ? RELAY2_PIN : RELAY1_PIN;
+                }
+                else {
+                    pin = RELAY1_OFF_PIN;
+                }
+            }
+            else {
+                pin = status ? RELAY2_PIN : RELAY1_PIN;
+                if (_relays[0].target_status == false) {
+                    _relays[0].current_status = false;
+                    _relays[0].target_status = true;
+                    _relays[0].report = true;
+                }
+            }
+        #endif
+        if (pin != GPIO_NONE) {
+            digitalWrite(pin, RELAY_PROVIDER_SHARP_TRIGGER);
+            nice_delay(200);
+            digitalWrite(pin, !RELAY_PROVIDER_SHARP_TRIGGER);
+        }
+        if (id == 0 && status) {
+            int toggleCount = (_sharpCurrentMode <= _sharpTargetMode) ? (_sharpTargetMode - _sharpCurrentMode) : (RELAY_PROVIDER_SHARP_MODE_COUNT - _sharpCurrentMode +  _sharpTargetMode);
+            DEBUG_MSG_P(PSTR("[RELAY] pin=%d, set mode %d=>%d, toggle=%d\n"), pin, _sharpCurrentMode, _sharpTargetMode, toggleCount);
+            for (int i = 0; i < toggleCount; i++) {
+                nice_delay(300);
+                digitalWrite(RELAY1_MODE_PIN, RELAY_PROVIDER_SHARP_TRIGGER);
+                nice_delay(200);
+                digitalWrite(RELAY1_MODE_PIN, !RELAY_PROVIDER_SHARP_TRIGGER);
+            }
+        } else {
+            DEBUG_MSG_P(PSTR("[RELAY] pin=%d, set mode %d=>%d\n"), pin, _sharpCurrentMode, _sharpTargetMode);
+        }
+        _sharpCurrentMode = _sharpTargetMode;
+
+        #if NODEMCU_ID == 7
+            if (id == 0 && status && _relays[1].current_status == false) { // 非加湿模式
+                nice_delay(300);
+                digitalWrite(_relays[1].pin, RELAY_PROVIDER_SHARP_TRIGGER);
+                nice_delay(200);
+                digitalWrite(_relays[1].pin, !RELAY_PROVIDER_SHARP_TRIGGER);
+            }
+        #endif
+    #endif
 }
 
 /**
@@ -186,8 +300,10 @@ void _relayProcess(bool mode) {
         #endif
 
         // Send MQTT
+        #if RELAY_PROVIDER != RELAY_PROVIDER_JBL
         #if MQTT_SUPPORT
             relayMQTT(id);
+        #endif
         #endif
 
         if (!_relayRecursive) {
@@ -577,6 +693,18 @@ void _relayConfigure() {
             digitalWrite(_relays[i].pin, HIGH);
         }
     }
+    #if RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+        #ifdef RELAY1_OFF_PIN
+            pinMode(RELAY1_OFF_PIN, OUTPUT);
+        #endif
+        pinMode(RELAY1_MODE_PIN, OUTPUT);
+        #if RELAY_PROVIDER_SHARP_TRIGGER == LOW
+            digitalWrite(RELAY1_PIN, HIGH);
+            digitalWrite(RELAY2_PIN, HIGH);
+            digitalWrite(RELAY1_OFF_PIN, HIGH);
+            digitalWrite(RELAY1_MODE_PIN, HIGH);
+        #endif
+    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -813,6 +941,21 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT
 
+#if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+const char *jblSourceName() {
+    // 0 - 5: 关闭
+    // 1 - next
+    // 2 - toggle
+    // 3 - 6: 辅助
+    // 4 - 3: 蓝牙
+    // 5 - 4: 光纤
+    // 6 - 0: 同轴
+    // 7 - 1: 优盘
+    //const static unsigned char _sources[] = {6, 7, 1, 4, 5, 0, 3, 2};
+    const static char *_names[] = {"同轴", "优盘", "未定", "蓝牙", "光纤", "关闭", "辅助", "未知"};
+    return _names[_jblSource];
+}
+#endif
 void _relayMQTTGroup(unsigned char id) {
     String topic = getSetting("mqttGroup", id, "");
     if (!topic.length()) return;
@@ -832,6 +975,17 @@ void relayMQTT(unsigned char id) {
     // Send state topic
     if (_relays[id].report) {
         _relays[id].report = false;
+        #if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+            mqttSend(MQTT_TOPIC_RELAY, id, jblSourceName());
+            return;
+        #elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+        if (id == 0) {
+            char payload[8];
+            sprintf(payload, "%d", _relays[id].current_status ? _sharpCurrentMode : 0);
+            mqttSend(MQTT_TOPIC_RELAY, id, payload);
+            return;
+        }
+        #endif
         mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
     }
 
@@ -852,6 +1006,17 @@ void relayMQTT(unsigned char id) {
 
 void relayMQTT() {
     for (unsigned int id=0; id < _relays.size(); id++) {
+        #if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+            mqttSend(MQTT_TOPIC_RELAY, id, jblSourceName());
+            continue;
+        #elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+        if (id == 0) {
+            char payload[8];
+            sprintf(payload, "%d", _relays[id].current_status ? _sharpCurrentMode : 0);
+            mqttSend(MQTT_TOPIC_RELAY, id, payload);
+            continue;
+        }
+        #endif
         mqttSend(MQTT_TOPIC_RELAY, id, _relays[id].current_status ? RELAY_MQTT_ON : RELAY_MQTT_OFF);
     }
 }
@@ -946,6 +1111,24 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
 
             // Get value
             unsigned char value = relayParsePayload(payload);
+            #if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+                if (value == 2 && payload[0] != '2' && _relays[0].current_status)
+                {
+                    DEBUG_MSG_P(PSTR("[RELAY] MQTT jblSource => %d\n"), _jblSource);
+                    _relays[0].current_status = false;
+                }
+            #elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
+                if (payload[0] >= '1' && payload[0] <= '0' + RELAY_PROVIDER_SHARP_MODE_COUNT)
+                {
+                    value = 1;
+                    _sharpTargetMode = payload[0] - '0';
+                    #if NODEMCU_ID == 4
+                        _sharp4LastStatus = _relays[0].current_status;
+                    #endif
+                    _relays[0].current_status = false;
+                    DEBUG_MSG_P(PSTR("[RELAY] MQTT set sharpTargetMode %d=>%d\n"), _sharpCurrentMode, _sharpTargetMode);
+                }
+            #endif
             if (value == 0xFF) return;
 
             relayStatusWrap(id, value, false);
@@ -1054,6 +1237,24 @@ void _relayInitCommands() {
 void _relayLoop() {
     _relayProcess(false);
     _relayProcess(true);
+    #if RELAY_PROVIDER == RELAY_PROVIDER_JBL
+    static int _loop = 0;
+    if (_relays[0].target_status == _relays[0].current_status && _loop++ < 1000)
+        return;
+    _loop = 0;
+    unsigned char source = 0;
+    for (int i = 0; i < 3; i++)
+        if (digitalRead(12 + i))
+            source |= 1<<i;
+    //DEBUG_MSG_P(PSTR("[RELAY] _relayLoop RELAY_PROVIDER_JBL value=%d\n"), source);
+    if (_jblSource != source) {
+        DEBUG_MSG_P(PSTR("[RELAY] _relayLoop source %d => %d\n"), _jblSource, source);
+        _jblSource = source;
+        _relays[0].current_status = _relays[0].target_status = (_jblSource != 5);
+        _relays[0].report = true;
+        relayMQTT(0);
+    }
+    #endif
 }
 
 void relaySetup() {

@@ -267,6 +267,16 @@
 #define DIGITAL_DEFAULT_STATE           1
 #endif
 
+#ifndef DIGITAL2_PIN
+#define DIGITAL2_PIN                    GPIO_NONE
+#endif
+#ifndef DIGITAL2_PIN_MODE
+#define DIGITAL2_PIN_MODE               INPUT_PULLUP
+#endif
+#ifndef DIGITAL2_DEFAULT_STATE
+#define DIGITAL2_DEFAULT_STATE          1
+#endif
+
 //------------------------------------------------------------------------------
 // ECH1560 based power sensor
 // Enable support by passing ECH1560_SUPPORT=1 build flag

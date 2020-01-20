@@ -529,6 +529,16 @@ void _sensorLoad() {
         sensor->setMode(DIGITAL_PIN_MODE);
         sensor->setDefault(DIGITAL_DEFAULT_STATE);
         _sensors.push_back(sensor);
+
+        #if (DIGITAL2_PIN != GPIO_NONE)
+        {
+            DigitalSensor * sensor = new DigitalSensor();
+            sensor->setGPIO(DIGITAL2_PIN);
+            sensor->setMode(DIGITAL2_PIN_MODE);
+            sensor->setDefault(DIGITAL2_DEFAULT_STATE);
+            _sensors.push_back(sensor);
+        }
+        #endif
     }
     #endif
 

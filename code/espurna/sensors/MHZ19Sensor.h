@@ -115,8 +115,11 @@ class MHZ19Sensor : public BaseSensor {
         }
 
         // Current value for slot # index
+        #ifndef MHZ19_CORRECTION
+        #define MHZ19_CORRECTION 0
+        #endif
         double value(unsigned char index) {
-            if (index == 0) return _co2;
+            if (index == 0) return _co2 + MHZ19_CORRECTION;
             return 0;
         }
 

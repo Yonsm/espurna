@@ -19,14 +19,16 @@
 
 */
 
-#ifdef USE_CUSTOM_H
+//#ifdef USE_CUSTOM_H
 #include "custom.h"
-#endif
+#include "custom_prefix.h"
+//#endif
 
 #include "version.h"
 #include "types.h"
 #include "arduino.h"
 #include "hardware.h"
+#include "custom_hardware.h"
 #include "defaults.h"
 #include "deprecated.h"
 #include "general.h"
@@ -36,3 +38,5 @@
 #include "sensors.h"
 #include "webui.h"
 #include "progmem.h"
+
+#include "custom_suffix.h"

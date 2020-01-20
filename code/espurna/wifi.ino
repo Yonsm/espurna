@@ -34,7 +34,7 @@ void _wifiConfigure() {
 
     jw.setHostname(getSetting("hostname").c_str());
     #if USE_PASSWORD
-        jw.setSoftAP(getSetting("hostname").c_str(), getAdminPass().c_str());
+        jw.setSoftAP(getSetting("hostname").c_str(), (strlen(ADMIN_PASS) >= 8) ? getAdminPass().c_str() : NULL);
     #else
         jw.setSoftAP(getSetting("hostname").c_str());
     #endif

@@ -100,7 +100,7 @@ void _mqttConnect() {
     _mqtt_user = strdup(user.c_str());
     _mqtt_pass = strdup(getSetting("mqttPassword", MQTT_PASS).c_str());
     _mqtt_will = strdup(mqttTopic(MQTT_TOPIC_STATUS, false).c_str());
-    String clientid = getSetting("mqttClientID", getIdentifier());
+    String clientid = getSetting("mqttClientID", getSetting("hostname"));
     _mqttPlaceholders(&clientid);
     _mqtt_clientid = strdup(clientid.c_str());
 

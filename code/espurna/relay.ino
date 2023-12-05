@@ -210,7 +210,7 @@ void _relaySyncUnlock() {
     unsigned char _sharpCurrentMode = 1;
     unsigned char _sharpTargetMode = 1;
     #define RELAY_PROVIDER_SHARP_MODE_COUNT 6
-    #if NODEMCU_ID == 3
+    #if NODEMCU_ID == 1
         bool _sharp3LastStatus = false;
         #undef RELAY_PROVIDER_SHARP_MODE_COUNT
         #define RELAY_PROVIDER_SHARP_MODE_COUNT 3
@@ -230,7 +230,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
     // Check relay ID
     if (id >= _relays.size()) return;
 
-    #if NODEMCU_ID == 3 || NODEMCU_ID == 6
+    #if NODEMCU_ID == 1 || NODEMCU_ID == 4
         if (id && !_relays[0].current_status) {
             _relays[id].target_status = _relays[id].current_status;
             return;
@@ -344,7 +344,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
         digitalWrite(_relays[id].pin, LOW);
     #elif RELAY_PROVIDER == RELAY_PROVIDER_SHARP
         uint8_t pin;
-        #if NODEMCU_ID == 6
+        #if NODEMCU_ID == 4
             if (id == 0) {
                 if (status) {
                     pin = RELAY1_PIN;
@@ -361,13 +361,13 @@ void _relayProviderStatus(unsigned char id, bool status) {
             else {
                 pin = RELAY2_PIN;
             }
-        #elif NODEMCU_ID == 3
+        #elif NODEMCU_ID == 1
             pin = (id == 0 && status && _sharp3LastStatus) ? GPIO_NONE : _relays[id].pin;
             _sharp3LastStatus = status;
-        #else //if NODEMCU_ID == 4 || NODEMCU_ID == 5
+        #else //if NODEMCU_ID == 2 || NODEMCU_ID == 3
             if (id == 0) {
                 if (status) {
-                    #if NODEMCU_ID == 5
+                    #if NODEMCU_ID == 3
                     if (_relays[1].target_status == false) {// 非加湿模式，首先按加湿模式，以便复位风量模式
                         digitalWrite(RELAY2_PIN, RELAY_PROVIDER_SHARP_TRIGGER);
                         nice_delay(200);
@@ -410,7 +410,7 @@ void _relayProviderStatus(unsigned char id, bool status) {
         }
         _sharpCurrentMode = _sharpTargetMode;
 
-        #if NODEMCU_ID == 6
+        #if NODEMCU_ID == 4
             if (id == 0 && status && _relays[1].current_status == false) { // 非加湿模式
                 nice_delay(300);
                 digitalWrite(_relays[1].pin, RELAY_PROVIDER_SHARP_TRIGGER);
@@ -1384,7 +1384,7 @@ void relayMQTTCallback(unsigned int type, const char * topic, const char * paylo
                 {
                     value = RelayStatus::ON;
                     _sharpTargetMode = payload[0] - '0';
-                    #if NODEMCU_ID == 3
+                    #if NODEMCU_ID == 1
                         _sharp3LastStatus = _relays[0].current_status;
                     #endif
                     _relays[0].current_status = false;

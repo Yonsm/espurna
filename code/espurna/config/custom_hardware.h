@@ -10,39 +10,112 @@
 #endif
 
 #define MAKE_STRING(e)              #e
-#define MAKE_HOSTNAME(a, b)         MAKE_STRING(a) MAKE_STRING(b)
+#define MAKE_DEVICE(a, b)           MAKE_STRING(a) MAKE_STRING(b)
 
+#undef DEVICE
 #if NODEMCU_ID
-    #define HOSTNAME                MAKE_HOSTNAME(NodeMCU, NODEMCU_ID)
-    #undef DEVICE
-    #define DEVICE                  HOSTNAME
+    #define DEVICE                  MAKE_DEVICE(NodeMCU, NODEMCU_ID)
 #elif SONOFF_ID
-    #define HOSTNAME                MAKE_HOSTNAME(Sonoff, SONOFF_ID)
-    #undef DEVICE
-    #define DEVICE                  HOSTNAME
+    #define DEVICE                  MAKE_DEVICE(Sonoff, SONOFF_ID)
 #elif HASSMART_ID
-    #define HOSTNAME                MAKE_HOSTNAME(Hassmart, HASSMART_ID)
-    #undef DEVICE
-    #define DEVICE                  HOSTNAME
+    #define DEVICE                  MAKE_DEVICE(Hassmart, HASSMART_ID)
 #endif
 
-
 #if NODEMCU_ID == 1
-    #undef THINGSPEAK_SUPPORT
+    #define HOSTNAME                "JingHuaQi1"
+    #define IR_SUPPORT              1
+    #define IR_RX_PIN               5
+    #define IR_TX_PIN               4
+    #define IR_USE_RAW              1
+    #define RELAY1_PIN              14
+    #define RELAY2_PIN              12
+    #define RELAY1_MODE_PIN         13
+    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
+
+    // #define MHZ19_SUPPORT           1
+    // #define MHZ19_RX_PIN            3
+    // #define MHZ19_TX_PIN            1
+
+    // #undef THINGSPEAK_SUPPORT
+    // #define THINGSPEAK_SUPPORT      1
+    // #define THINGSPEAK_ENABLED      1
+    // #define THINGSPEAK_LEWEI        1
+    // #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY2
+
+    // #define DHT_SUPPORT             1
+    // #define DHT_PIN                 2
+    // #define DHT_TYPE                DHT_CHIP_DHT11
+
+#elif NODEMCU_ID == 2
+    #define HOSTNAME                "JingHuaQi2"
+    #define RELAY1_MODE_PIN         5
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              0
+    #define RELAY1_OFF_PIN          2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
+    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
+#elif NODEMCU_ID == 3
+    #define HOSTNAME                "JingHuaQi3"
+    #define RELAY1_MODE_PIN         5
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              0
+    #define RELAY1_OFF_PIN          2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
+    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
+
+    // #define PMSX003_SUPPORT         1
+    // #define PMS_TYPE                PMS_TYPE_5003S
+    // #define PMS_SMART_SLEEP         1
+    // #define PMS_USE_SOFT            1
+
+    // #define IR_SUPPORT              1
+    // #define IR_RX_PIN               12
+    // #define IR_TX_PIN               14
+    // #define IR_USE_RAW              1
+
+    #define ANALOG_SUPPORT          1
+    #define ANALOG_FACTOR           -1.0
+    #define ANALOG_OFFSET           1024
+    #define ANALOG_DECIMALS         0
+
+    #define DIGITAL_SUPPORT         1
+    #define DIGITAL1_PIN            13
+    #define DIGITAL1_PIN_MODE       INPUT
+    #define DIGITAL1_DEFAULT_STATE  0
+    #define DIGITAL2_PIN            15
+    #define DIGITAL2_PIN_MODE       INPUT
+    #define DIGITAL2_DEFAULT_STATE  1
+
+#elif NODEMCU_ID == 4
+    #define HOSTNAME                "JingHuaQi4"
+    #undef THINGSPEAK_SUPPORT    
     #define THINGSPEAK_SUPPORT      1
     #define THINGSPEAK_ENABLED      1
     #define THINGSPEAK_LEWEI        1
-    #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY1
+    #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY2
+
+    #define RELAY1_MODE_PIN         5
+    #define RELAY1_PIN              4
+    #define RELAY2_PIN              0
+    #define RELAY1_OFF_PIN          2
+    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
+    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
+
     #define PMSX003_SUPPORT         1
-    #define PMS_TYPE                PMS_TYPE_5003T
+    #define PMS_TYPE                PMS_TYPE_5003ST
     #define PMS_SMART_SLEEP         1
     #define PMS_USE_SOFT            1
-#elif NODEMCU_ID == 2
+
+    #define SENSEAIR_SUPPORT        1
+    #define SENSEAIR_RX_PIN         1
+    #define SENSEAIR_TX_PIN         3
+#elif NODEMCU_ID == 5
+    #define HOSTNAME                "YinXiang"
     #undef THINGSPEAK_SUPPORT
     #define THINGSPEAK_SUPPORT      1
     #define THINGSPEAK_ENABLED      1
     #define THINGSPEAK_LEWEI        1
-    #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY1
+    #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY2
 
     #define RELAY1_PIN              15
     #define RELAY1_RESET_PIN        15
@@ -67,92 +140,19 @@
     #define I2C_SDA_PIN             4
     #define I2C_SCL_PIN             5
     #define BH1750_SUPPORT          1
-
-#elif NODEMCU_ID == 3
-    #define IR_SUPPORT              1
-    #define IR_RX_PIN               5
-    #define IR_TX_PIN               4
-    #define IR_USE_RAW              1
-    #define RELAY1_PIN              14
-    #define RELAY2_PIN              12
-    #define RELAY1_MODE_PIN         13
-    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
-
-    #define MHZ19_SUPPORT           1
-    #define MHZ19_RX_PIN            3
-    #define MHZ19_TX_PIN            1
-
+#elif NODEMCU_ID == 6
+    #define HOSTNAME                "ChuanGanQi"
     #undef THINGSPEAK_SUPPORT
     #define THINGSPEAK_SUPPORT      1
     #define THINGSPEAK_ENABLED      1
     #define THINGSPEAK_LEWEI        1
     #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY1
-
-    // #define DHT_SUPPORT             1
-    // #define DHT_PIN                 2
-    // #define DHT_TYPE                DHT_CHIP_DHT11
-
-#elif NODEMCU_ID == 4
-    #define RELAY1_MODE_PIN         5
-    #define RELAY1_PIN              4
-    #define RELAY2_PIN              0
-    #define RELAY1_OFF_PIN          2
-    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
-    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
-#elif NODEMCU_ID == 5
-    #define RELAY1_MODE_PIN         5
-    #define RELAY1_PIN              4
-    #define RELAY2_PIN              0
-    #define RELAY1_OFF_PIN          2
-    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
-    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
-
-    // #define PMSX003_SUPPORT         1
-    // #define PMS_TYPE                PMS_TYPE_5003S
-    // #define PMS_SMART_SLEEP         1
-    // #define PMS_USE_SOFT            1
-
-    #define IR_SUPPORT              1
-    #define IR_RX_PIN               12
-    #define IR_TX_PIN               14
-    #define IR_USE_RAW              1
-
-    #define ANALOG_SUPPORT          1
-    #define ANALOG_FACTOR           -1.0
-    #define ANALOG_OFFSET           1024
-    #define ANALOG_DECIMALS         0
-
-    #define DIGITAL_SUPPORT         1
-    #define DIGITAL1_PIN            13
-    #define DIGITAL1_PIN_MODE       INPUT
-    #define DIGITAL1_DEFAULT_STATE  0
-    // #define DIGITAL2_PIN            15
-    // #define DIGITAL2_PIN_MODE       INPUT
-    // #define DIGITAL2_DEFAULT_STATE  1
-    
-#elif NODEMCU_ID == 6
-    #undef THINGSPEAK_SUPPORT    
-    #define THINGSPEAK_SUPPORT      1
-    #define THINGSPEAK_ENABLED      1
-    #define THINGSPEAK_LEWEI        1
-    #define THINGSPEAK_APIKEY       THINGSPEAK_APIKEY6
-
-    #define RELAY1_MODE_PIN         5
-    #define RELAY1_PIN              4
-    #define RELAY2_PIN              0
-    #define RELAY1_OFF_PIN          2
-    #define RELAY_PROVIDER          RELAY_PROVIDER_SHARP
-    #define RELAY_PROVIDER_SHARP_TRIGGER LOW
-
     #define PMSX003_SUPPORT         1
-    #define PMS_TYPE                PMS_TYPE_5003ST
+    #define PMS_TYPE                PMS_TYPE_5003T
     #define PMS_SMART_SLEEP         1
     #define PMS_USE_SOFT            1
-
-    #define SENSEAIR_SUPPORT        1
-    #define SENSEAIR_RX_PIN         1
-    #define SENSEAIR_TX_PIN         3
 #elif NODEMCU_ID == 7
+    #define HOSTNAME                "ChuanGanQi2"
     // #undef THINGSPEAK_SUPPORT
     // #define THINGSPEAK_SUPPORT      1
     // #define THINGSPEAK_LEWEI           1
@@ -171,6 +171,7 @@
     #define SENSEAIR_RX_PIN         1
     #define SENSEAIR_TX_PIN         3
 #elif SONOFF_ID == 1
+    #define HOSTNAME                "KeTingTongDeng"
     #define RELAY2_PIN              20 // Fake GPIO
     #define RELAY2_TYPE             RELAY_TYPE_NORMAL
     #define BUTTON3_PIN             3
@@ -183,6 +184,7 @@
     #define BUTTON4_MODE            BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON4_RELAY           3 // Button4 -> Relay3
 #elif SONOFF_ID == 2
+    #define HOSTNAME                "GuoDaoTongDeng"
     #undef BUTTON2_PIN
     #define BUTTON2_PIN             GPIO_NONE
     #undef RELAY2_PIN
@@ -196,6 +198,13 @@
 #elif HASSMART_ID
     #undef MANUFACTURER
     #define MANUFACTURER            "HASSMART"
+    #if HASSMART_ID == 1
+        #define HOSTNAME            "CanTingTongDeng"
+    #elif HASSMART_ID == 2
+        #define HOSTNAME            "XiShouJianDeng"
+    #else
+        #define HOSTNAME            DEVICE
+    #endif
 
     // Buttons
     #undef BUTTON1_PIN

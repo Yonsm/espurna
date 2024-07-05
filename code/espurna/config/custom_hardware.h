@@ -171,7 +171,7 @@
     #define SENSEAIR_RX_PIN         1
     #define SENSEAIR_TX_PIN         3
 #elif SONOFF_ID == 1
-    #define HOSTNAME                "KeTingTongDeng"
+    #define HOSTNAME                "GuoDaoGuiDeng"
     #define RELAY2_PIN              20 // Fake GPIO
     #define RELAY2_TYPE             RELAY_TYPE_NORMAL
     #define BUTTON3_PIN             3
